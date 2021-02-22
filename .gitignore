@@ -39,5 +39,8 @@ fabric.properties
 terraform.tfstate*
 terraform.tfvars
 
+# lock file
+.terraform.lock.hcl
+
 # Mac
 .DS_Store

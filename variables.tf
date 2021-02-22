@@ -2,14 +2,24 @@
  * EBS variables
  */
 
+
+# general
+
 variable name {
   type = string
   description = "name to use in tags"
 }
 
+
+# ebs
+
 variable availability_zones {
   type = list(string)
   description = "list of availability zones"
+  validation {
+    condition = length(distinct(var.availability_zones)) == length(var.availability_zones)
+    error_message = "Duplicate availablity zones."
+  }
 }
 
 variable volumes_per_az {
@@ -20,8 +30,14 @@ variable volumes_per_az {
 
 variable type {
   type = string
-  description = "EBS volume type (gp2, io1, st1, sc1)"
+  description = "EBS volume type (standard, gp2, gp3, io1, io2, sc1, st1)"
   default = "gp2"
+  validation {
+    condition = contains([
+      "standard", "gp2", "gp3", "io1", "io2", "sc1", "st1"
+    ], var.type)
+    error_message = "Invalid volume type."
+  }
 }
 
 variable size {
@@ -31,9 +47,30 @@ variable size {
 
 variable iops {
   type = number
-  description = "I/O operations per second (only for type io1)"
-  default = 100
+  description = "I/O operations per second (must be set for types io1, io2, gp3)"
+  default = 0
 }
+
+variable encrypted {
+  type = bool
+  description = "flag to enable disk encryption (default true)"
+  default = true
+}
+
+variable kms_key_id {
+  type = string
+  description = "ARN for the KMS encryption key (if not specified the EBS default key is used)"
+  default = ""
+}
+
+variable snapshot_ids {
+  type = list(string)
+  description = "list of snapshot IDs to launch the volumes"
+  default = []
+}
+
+
+# dlm
 
 variable enable_backup {
   type = bool
@@ -51,11 +88,15 @@ variable dlm_period {
   type = number
   description = "frequency of snapshot in hours (valid values are 1, 2, 3, 4, 6, 8, 12, or 24)"
   default = 24
+  validation {
+    condition = contains([1, 2, 3, 4, 6, 8, 12, 24], var.dlm_period)
+    error_message = "Invalid DLM period."
+  }
 }
 
 variable dlm_retention {
   type = number
-  description = "retention count"
+  description = "retention period in days"
   default = 7
 }
 
